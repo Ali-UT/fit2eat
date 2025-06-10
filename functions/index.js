@@ -34,7 +34,7 @@ exports.analyzeIngredients = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    // 4. Prepare the model (use gemini-pro-vision for image input).
+    // 4. Prepare the model (using gemini-2.5-flash-preview-05-20 for image input).
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
 
     const imagePart = {
