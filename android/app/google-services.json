@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "79543153509",
+    "project_id": "fit2eat",
+    "storage_bucket": "fit2eat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:79543153509:android:87ba0c3145ddf89a47a78c",
+        "android_client_info": {
+          "package_name": "com.example.fit2eat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTsjFhuaoLmSzU7tjF3aGC8pLkDkzBPAQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
