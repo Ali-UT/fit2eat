@@ -81,7 +81,8 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text('Welcome! Scan your ingredients to get started.'),
+            if (!scannerViewModel.isLoading && scannerViewModel.pickedImage == null)
+              const Text('Welcome! Scan your ingredients to get started.'),
             const SizedBox(height: 20),
             if (scannerViewModel.errorMessage != null)
               Padding(
@@ -92,13 +93,15 @@ class HomeScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
+            if (scannerViewModel.isLoading)
+              const CircularProgressIndicator(),
             if (scannerViewModel.pickedImage != null) // This now refers to XFile?
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: kIsWeb
                       ? FutureBuilder<Uint8List>(
-                          future: scannerViewModel.pickedImage!.readAsBytes(), // XFile has readAsBytes
+                          future: scannerViewModel.pickedImage!.readAsBytes(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.done && snapshot.data != null) {
                               return Image.memory(snapshot.data!);
@@ -108,7 +111,7 @@ class HomeScreen extends StatelessWidget {
                             return const CircularProgressIndicator();
                           },
                         )
-                      : Image.file(File(scannerViewModel.pickedImage!.path)), // XFile has path
+                      : Image.file(File(scannerViewModel.pickedImage!.path)),
                 ),
               ),
           ],

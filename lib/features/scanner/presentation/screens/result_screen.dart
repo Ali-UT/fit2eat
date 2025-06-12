@@ -92,7 +92,7 @@ class ResultScreen extends StatelessWidget {
                   children: currentScanResult.harmfulIngredients.map((ingredient) {
                     return ListTile(
                       title: Text(ingredient.name),
-                      // subtitle: Text(ingredient.description ?? 'No description available.'), // Assuming HarmfulIngredient has a description
+                      subtitle: Text(ingredient.reason ?? 'No description available.'), // Assuming HarmfulIngredient has a description
                     );
                   }).toList(),
                 ),

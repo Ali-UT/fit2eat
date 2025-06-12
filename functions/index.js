@@ -5,82 +5,86 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 admin.initializeApp();
 
 exports.analyzeIngredients = functions.https.onCall(async (data, context) => {
-  // 1. Ensure the user is authenticated.
-  if (!data.user) {
-    throw new functions.https.HttpsError(
-      "unauthenticated",
-      "The function must be called while authenticated."
-    );
+  console.log("Function triggered.");
+
+  // 1. Authenticated check
+  // if (!context.auth) {
+  //   console.error("Authentication check failed. No user.");
+  //   throw new functions.https.HttpsError(
+  //     "unauthenticated", "The function must be called while authenticated."
+  //   );
+  // }
+  // console.log(`Authenticated as user: ${context.auth.uid}`);
+  const clientData = data.data;
+  // Safely log the keys of the incoming data object to see what we received.
+  if (clientData) {
+    console.log("Data object received with keys:", Object.keys(clientData));
+  } else {
+    console.error("Data object is null or undefined.");
+    throw new functions.https.HttpsError("invalid-argument", "Data object is missing.");
   }
 
-  // 2. Safely access the API key and initialize the Gemini client INSIDE the handler.
-  const API_KEY = functions.config().gemini?.key;
+  // 2. Use process.env for V2 functions to get the secret key
+  const API_KEY = process.env.GEMINI_KEY;
   if (!API_KEY) {
-    // This provides a clear error if the key was never set.
+    console.error("GEMINI_KEY environment variable is not set.");
     throw new functions.https.HttpsError(
-      "failed-precondition",
-      "The Gemini API key is not configured. Please ask the developer to set it."
+      "failed-precondition", "The Gemini API key is not configured."
     );
   }
   const genAI = new GoogleGenerativeAI(API_KEY);
+  console.log("Gemini client initialized.");
 
-  // 3. Get the base64 image string from the app.
-  const base64Image = data.image;
+  // 3. Image data check
+  const base64Image = clientData.image;
   if (!base64Image) {
+    console.error("Image data is missing from the request.");
     throw new functions.https.HttpsError(
-      "invalid-argument",
-      "The function must be called with an 'image' argument."
+      "invalid-argument", "The function must be called with an 'image' argument."
     );
   }
+  console.log("Image data received.");
 
   try {
-    // 4. Prepare the model (using gemini-2.5-flash-preview-05-20 for image input).
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
+    // 4. Prepare the model you requested
+    const modelName = "gemini-2.5-flash-preview-05-20";
+    console.log(`Initializing model: ${modelName}`);
+    const model = genAI.getGenerativeModel({ model: modelName });
 
     const imagePart = {
-      inlineData: {
-        mimeType: "image/jpeg",
-        data: base64Image,
-      },
+      inlineData: { mimeType: "image/jpeg", data: base64Image },
     };
 
     const prompt = `
       You are an AI food safety assistant named 'Fit2Eat'. Your task is to analyze the provided image of a packaged food's ingredients list.
-
       Based on the ingredients, you must determine:
-      1. If the food is generally fit for consumption for a healthy adult ('isFitToEat'). Bias towards 'true' unless there are highly processed or controversial ingredients.
-      2. A list of potentially harmful ingredients and their common negative effects ('harmfulIngredients').
-      3. A list of warnings for people with specific health conditions (e.g., celiac disease, lactose intolerance, high blood pressure) who should avoid this item ('warnings').
-
+      1. If the food is a decently healthy choice for consumption ('isFitToEat').
+      2. A list of potentially harmful ingredients and their effects ('harmfulIngredients').
+      3. A list of warnings for people with specific health conditions ('warnings').
       You MUST return your response as a single, minified JSON object with no extra text or markdown formatting. The JSON object must strictly follow this structure:
       {
         "isFitToEat": boolean,
-        "harmfulIngredients": [
-          {
-            "name": "Ingredient Name",
-            "effects": "Description of harmful effects."
-          }
-        ],
-        "warnings": [
-          "Condition: Rationale for avoidance."
-        ]
+        "harmfulIngredients": [{"name": "Ingredient Name", "reason": "Description"}],
+        "warnings": ["Condition: Rationale for avoidance."]
       }
     `;
 
-    // 5. Call the Gemini API with the prompt and the image.
+    // 5. Call the Gemini API
+    console.log("Sending request to Gemini API...");
     const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
     const text = response.text();
+    console.log("Received response from Gemini.");
+    console.log("Gemini Raw Text:", text);
 
-    // 6. Parse the JSON text and return it to the Flutter app.
-    return JSON.parse(text);
+    // 6. Parse the response
+    console.log("Parsing JSON response...");
+    const parsedResponse = JSON.parse(text);
+    console.log("JSON parsed successfully. Returning to client.");
+    return parsedResponse;
 
   } catch (error) {
-    console.error("Error calling Gemini API or parsing response:", error);
-    throw new functions.https.HttpsError(
-      "internal",
-      "Failed to analyze ingredients.",
-      error
-    );
+    console.error("!!! CRITICAL ERROR inside function execution:", error);
+    throw new functions.https.HttpsError("internal", "Failed to analyze ingredients.", error.message);
   }
 });
